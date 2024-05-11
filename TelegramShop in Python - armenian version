@@ -1,0 +1,133 @@
+import telebot
+import sqlite3
+from telebot import types
+
+
+bot = telebot.TeleBot ('TOKEN')
+name = None
+@bot.message_handler(commands=['start'])
+def start (message):
+    conn = sqlite3.connect('sqliteshop.sql')
+    cur = conn.cursor()
+    
+    cur.execute('CREATE TABLE IF NOT EXISTS users(id int auto_increment primary key, name varchar(50), email varchar (50))')
+    conn.commit()
+    cur.close()
+    conn.close()
+    bot.send_message(message.chat.id, ('Գրանցվելու համար մուտքագրեք Ձեր անունը'))
+    bot.register_next_step_handler(message,user_name)
+
+def user_name(message):
+    global name
+    name=message.text.strip()
+    bot.send_message(message.chat.id, ('Մուտքագրեք ձեր էլ.փոստը կամ Gmail-ը'))
+    bot.register_next_step_handler(message,user_email)
+
+def user_email(message):
+    email = message.text.strip()
+    conn = sqlite3.connect('sqliteshop.sql')
+    cur = conn.cursor()
+    
+    cur.execute("INSERT INTO users (name,email)VALUES ('%s','%s')" % (name, email))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    bot.send_message(message.chat.id, ('Օգտատերը Գրանցված է'))
+    bot.send_message(message.chat.id, ('Ողջույն, սա Steam Game Key Store-ն է։ Գնեք համակարգչի խաղեր, որոնք լիցենզավորված են Steam-ի համար 🎮 \n'
+                                       'Գնե՛ք խաղեր Հայաստանում, Ռուսաստանում, Ուկրաինայում, Բելառուսում ցածր գնով։ 🎮 \n'
+                                       'Սեղմեք /help որպեսզի բոտը կարողանա օգնել ձեզ խաղեր գնել մեզանից'))
+
+@bot.message_handler(commands=['help'])
+def help(message):
+    bot.send_message(message.chat.id,"Սեղմեք /buttons խաղեր գնելու և գները պարզելու համար💲🏷️\n"
+                     "Այլ հարցերի դեպքում գրեք անձնական նամակով - @Gasparyan2007 📩 \n")
+
+
+@bot.message_handler(commands=['buttons'])
+def keyboard (message):
+    markup=types.ReplyKeyboardMarkup(resize_keyboard=False)
+    ButtonA=types.KeyboardButton('Խաղեր🎮')
+    ButtonB=types.KeyboardButton('Գները🏷️')
+    ButtonC=types.KeyboardButton('Կոնտակտներ ☎')
+    markup.add(ButtonA,ButtonB,ButtonC)
+    bot.send_message(message.chat.id,'Գներ, խաղեր և կոնտակտներ',reply_markup=markup)
+
+
+@bot.message_handler(func=lambda message: message.text == 'Գները🏷️')
+def price (message):
+    bot.send_message(message.chat.id,"Grand Theft Auto V -|Մեզ մոտ - $9.99💵| Steam-ում - |$25.48💵| \n"
+                     "Euro Truck Simulator 2 - |Մեզ մոտ - $7.99💵| Steam-ում - |$10.99💵| \n"
+                     "Forza Horizon 5 - |Մեզ մոտ - $20.99💵| Steam-ում - |$34.78💵|\n"
+                     "Minecraft - |Մեզ մոտ - $7.99💵")
+
+
+@bot.message_handler(func=lambda message: message.text == 'Կոնտակտներ ☎')
+def contacts(message):
+    markup = types.InlineKeyboardMarkup()
+    insta = types.InlineKeyboardButton(text='Instagram💬',url='https://www.instagram.com/gaasparryann/')
+    email = types.InlineKeyboardButton(text='Gmail📧', url='https://mail.google.com/mail/u/0/#inbox')
+    markup.add(insta,email)
+    bot.send_message(message.chat.id, 'Գրեք Insta-ին կամ Gmail-ին \n'
+                     ' Ձեր հարցին արագ պատասխանելու համար 🙂 Հաճելի օր ', reply_markup=markup)
+                    
+
+@bot.message_handler(content_types=["text"],func=lambda message: message.text == 'Խաղեր🎮')
+def any_msg(message):
+    keyboardmain = types.InlineKeyboardMarkup()
+    first_button = types.InlineKeyboardButton(text="Grand Theft Auto V🕹️", callback_data="first")
+    second_button = types.InlineKeyboardButton(text="Euro Truck Simulator 2🚛", callback_data="second")
+    boom_button = types.InlineKeyboardButton(text="Forza Horizon 5🚗", callback_data="second")
+    look_button = types.InlineKeyboardButton(text="Minecraft⛏️", callback_data="look")
+    shoot_button = types.InlineKeyboardButton(text="Battlefield 2042🔫", callback_data="shoot")
+    keyboardmain.add(first_button, second_button,boom_button, look_button,shoot_button)
+    bot.send_message(message.chat.id, "Համակարգչային խաղերի առցանց խանութ և Steam-ի ակտիվացման բանալիներ ցածր գնով📊", reply_markup=keyboardmain)
+
+@bot.callback_query_handler(func=lambda call:True)
+def callback_inline(call):
+    if call.data == "mainmenu":
+        keyboardmain = types.InlineKeyboardMarkup()
+        first_button = types.InlineKeyboardButton(text="Grand Theft Auto V🕹️", callback_data="first")
+        second_button = types.InlineKeyboardButton(text="Euro Truck Simulator 2🚛", callback_data="second")
+        boom_button = types.InlineKeyboardButton(text="Forza Horizon 5🚗", callback_data="boom")
+        look_button = types.InlineKeyboardButton(text="Minecraft⛏️", callback_data="look")
+        shoot_button = types.InlineKeyboardButton(text="Battlefield 2042🔫", callback_data="shoot")
+        keyboardmain.add(first_button, second_button,boom_button,look_button,shoot_button)
+        bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Մեր խաղային խանութում Խաղ գնելու համար ընտրեք խաղը և սեղմեք՝ Գնել❗💰 ",reply_markup=keyboardmain)
+
+    if call.data == "first":
+        keyboard = types.InlineKeyboardMarkup()
+        rele1 = types.InlineKeyboardButton(text="Գնել💸", callback_data="1" , url='https://wayup.in/ru/')
+        backbutton = types.InlineKeyboardButton(text="Ետ🔙", callback_data="mainmenu")
+        keyboard.add(rele1, backbutton)
+        bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Grand Theft Auto V🚗 — բաց աշխարհի մարտա-արկածային համակարգչային խաղ 🚔 մշակված Rockstar North-ի կողմից և հրատարակված Rockstar Games-ի կողմից:🚀",reply_markup=keyboard)
+
+    elif call.data == "second":
+        keyboard = types.InlineKeyboardMarkup()
+        rele1 = types.InlineKeyboardButton(text="Գնել💸", callback_data="gg", url='https://wayup.in/ru/')
+        backbutton = types.InlineKeyboardButton(text="Ետ🔙", callback_data="mainmenu")
+        keyboard.add(rele1,backbutton)
+        bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Euro Truck Simulator 2🚛 — համակարգչային խաղ բեռնատարի վարորդի սիմուլյատորի ժանրում 📦 տնտեսական ռազմավարության տարրերով։ Մշակվել և թողարկվել է չեխական SCS Software ընկերության կողմից 2012թ. Truck Simulator խաղերի շարքի մի մասը.🚀",reply_markup=keyboard)
+
+    elif call.data == "boom":
+        keyboard = types.InlineKeyboardMarkup()
+        rele7 = types.InlineKeyboardButton(text="Գնել💸", callback_data="hh", url='https://wayup.in/ru/')
+        backbutton = types.InlineKeyboardButton(text="Ետ🔙", callback_data="mainmenu")
+        keyboard.add(rele7,backbutton)
+        bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Forza Horizon 5🏎️ — 2021 համակարգչային խաղ արկադային մրցարշավի սիմուլյատորի ժանրում, որը մշակվել է Playground Games-ի կողմից և հրապարակվել է Xbox Game Studios-ի կողմից։ Խաղը հայտարարվել է 2021 թվականի հունիսին E3 2021 միջոցառման ժամանակ.🚀",reply_markup=keyboard)
+
+    elif call.data == "look":
+        keyboard = types.InlineKeyboardMarkup()
+        rele8 = types.InlineKeyboardButton(text="Գնել💸", callback_data="hh", url='https://wayup.in/ru/')
+        backbutton = types.InlineKeyboardButton(text="Ետ🔙", callback_data="mainmenu")
+        keyboard.add(rele8,backbutton)
+        bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Minecraft-ը ինդի ավազատուփ համակարգչային խաղ է, որը ստեղծվել է շվեդ ծրագրավորող Մարկուս Պերսսոնի կողմից և հրատարակվել է նրա Mojang AB ստուդիայի կողմից։🚀",reply_markup=keyboard)
+
+    elif call.data == "shoot":
+        keyboard = types.InlineKeyboardMarkup()
+        rele8 = types.InlineKeyboardButton(text="Գնել💸", callback_data="hh", url='https://wayup.in/ru/')
+        backbutton = types.InlineKeyboardButton(text="Ետ🔙", callback_data="mainmenu")
+        keyboard.add(rele8,backbutton)
+        bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Battlefield 2042-ը առաջին դեմքով հրաձիգ տեսախաղ է, որը մշակվել է DICE-ի կողմից և հրատարակվել է Electronic Arts-ի կողմից։ Դա Battlefield շարքի տասներկուերորդ հիմնական թողարկումն է, որը թողարկվել է 2021 թվականի նոյեմբերի 19-ին Microsoft Windows-ի, PlayStation 4-ի, PlayStation 5-ի, Xbox One-ի և Xbox Series X/S-ի համար։🚀",reply_markup=keyboard)
+
+bot.polling(none_stop=False)
